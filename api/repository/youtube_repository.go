@@ -14,6 +14,7 @@ type YoutubeRepository interface {
 	GetAvailableLastPageToken() (pageToken string, err error)
 	MarkPageTokenAsUsed(pageToken string) error
 	GetVideos(limit int, offset int) ([]model.VideoMetadata, error)
+	SearchVideos(searchString string) ([]model.VideoMetadata, error)
 }
 
 type youtubeRepository struct {
@@ -63,7 +64,25 @@ func (youtubeRepo youtubeRepository) MarkPageTokenAsUsed(pageToken string) error
 
 func (youtubeRepo youtubeRepository) GetVideos(limit int, offset int) ([]model.VideoMetadata, error) {
 	videos := []model.VideoMetadata{}
-	rows, err := youtubeRepo.pgxPool.Query(context.Background(), "SELECT id, youtube_id, title, description, published_at, thumbnail_url FROM videos ORDER BY created_at DESC LIMIT $1 OFFSET $2", limit, offset)
+	rows, err := youtubeRepo.pgxPool.Query(context.Background(), "SELECT id, youtube_id, title, description, published_at, thumbnail_url FROM videos ORDER BY published_at DESC LIMIT $1 OFFSET $2", limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var video model.VideoMetadata
+		err = rows.Scan(&video.ID, &video.YoutubeID, &video.Title, &video.Description, &video.PublishedAt, &video.ThumbnailURL)
+		if err != nil {
+			return nil, err
+		}
+		videos = append(videos, video)
+	}
+	return videos, nil
+}
+
+func (youtubeRepo youtubeRepository) SearchVideos(searchString string) ([]model.VideoMetadata, error) {
+	videos := []model.VideoMetadata{}
+	rows, err := youtubeRepo.pgxPool.Query(context.Background(), "SELECT id, youtube_id, title, description, published_at, thumbnail_url FROM videos WHERE document_with_weights @@ plainto_tsquery($1) ORDER BY ts_rank(document_with_weights, plainto_tsquery($1)) DESC, published_at DESC", searchString)
 	if err != nil {
 		return nil, err
 	}

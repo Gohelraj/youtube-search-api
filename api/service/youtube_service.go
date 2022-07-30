@@ -7,6 +7,7 @@ import (
 
 type YoutubeService interface {
 	GetVideos(limit int, offset int) ([]model.VideoMetadata, error)
+	SearchVideos(searchString string) ([]model.VideoMetadata, error)
 }
 
 type youtubeService struct {
@@ -21,4 +22,8 @@ func NewYoutubeService(r repository.YoutubeRepository) YoutubeService {
 
 func (y youtubeService) GetVideos(limit int, offset int) ([]model.VideoMetadata, error) {
 	return y.youtubeRepository.GetVideos(limit, offset)
+}
+
+func (y youtubeService) SearchVideos(searchString string) ([]model.VideoMetadata, error) {
+	return y.youtubeRepository.SearchVideos(searchString)
 }

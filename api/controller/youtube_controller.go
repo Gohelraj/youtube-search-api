@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Gohelraj/youtube-search-api/api/model"
 	"github.com/Gohelraj/youtube-search-api/api/service"
 	er "github.com/Gohelraj/youtube-search-api/error"
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,7 @@ import (
 
 type YoutubeController interface {
 	GetVideos(c *gin.Context)
-	SearchYoutube(c *gin.Context)
+	SearchVideos(c *gin.Context)
 }
 
 type youtubeController struct {
@@ -44,6 +45,20 @@ func (y youtubeController) GetVideos(c *gin.Context) {
 	c.JSON(http.StatusOK, videos)
 }
 
-func (y youtubeController) SearchYoutube(c *gin.Context) {
-
+func (y youtubeController) SearchVideos(c *gin.Context) {
+	var searchRequest model.SearchVideosRequest
+	if err := c.BindJSON(&searchRequest); err != nil {
+		er.SendError(c, err)
+		return
+	}
+	if searchRequest.SearchString == "" {
+		er.SendError(c, er.ErrSearchStringRequired)
+		return
+	}
+	videos, err := y.youtubeService.SearchVideos(searchRequest.SearchString)
+	if err != nil {
+		er.SendError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, videos)
 }

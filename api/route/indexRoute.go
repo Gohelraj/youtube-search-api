@@ -24,6 +24,7 @@ func InitializeRouter(pgxPool *pgxpool.Pool) *gin.Engine {
 	youtubeController := controller.NewYoutubeController(youtubeService)
 
 	r.GET("/videos", youtubeController.GetVideos)
+	r.POST("/videos/search", youtubeController.SearchVideos)
 
 	return r
 }

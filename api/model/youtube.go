@@ -14,7 +14,6 @@ type VideoMetadata struct {
 	ThumbnailURL *string   `json:"thumbnailUrl,omitempty"`
 }
 
-type GetVideosRequest struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+type SearchVideosRequest struct {
+	SearchString string `json:"searchString"`
 }

@@ -7,10 +7,12 @@ CREATE TABLE IF NOT EXISTS videos (
     published_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    thumbnail_url VARCHAR(500) NOT NULL
+    thumbnail_url VARCHAR(500) NOT NULL,
+    document_with_weights tsvector NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_videos_title_description_index ON videos (title, description);
 CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos (published_at);
+CREATE INDEX idx_videos_document_with_weights ON videos USING GIN(document_with_weights);
 CREATE UNIQUE INDEX ON videos (youtube_id);
 
 CREATE TABLE IF NOT EXISTS page_tokens (
@@ -22,8 +24,22 @@ CREATE TABLE IF NOT EXISTS page_tokens (
 CREATE INDEX IF NOT EXISTS idx_page_tokens_next_page_token_is_used ON page_tokens (next_page_token, is_used);
 CREATE UNIQUE INDEX ON page_tokens (next_page_token);
 
+CREATE FUNCTION videos_tsvector_trigger() RETURNS trigger as $$
+BEGIN
+    NEW.document_with_weights :=
+        setweight(to_tsvector('english', NEW.title), 'A')
+        || setweight(to_tsvector('english', NEW.description), 'B');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tsvupdate BEFORE INSERT OR UPDATE
+    ON videos FOR EACH ROW EXECUTE PROCEDURE videos_tsvector_trigger();
+
 -- migrate:down
 DROP TABLE IF EXISTS page_tokens;
 DROP INDEX IF EXISTS idx_videos_title_description_index;
 DROP INDEX IF EXISTS idx_videos_published_at;
+DROP TRIGGER IF EXISTS tsvupdate ON videos;
+DROP FUNCTION IF EXISTS videos_tsvector_trigger;
 DROP TABLE IF EXISTS videos;

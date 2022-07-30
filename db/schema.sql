@@ -9,6 +9,22 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: videos_tsvector_trigger(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.videos_tsvector_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.document_with_weights :=
+        setweight(to_tsvector('english', NEW.title), 'A')
+        || setweight(to_tsvector('english', NEW.description), 'B');
+    RETURN NEW;
+END
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -66,7 +82,8 @@ CREATE TABLE public.videos (
     published_at timestamp without time zone NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    thumbnail_url character varying(500) NOT NULL
+    thumbnail_url character varying(500) NOT NULL,
+    document_with_weights tsvector NOT NULL
 );
 
 
@@ -136,6 +153,13 @@ CREATE INDEX idx_page_tokens_next_page_token_is_used ON public.page_tokens USING
 
 
 --
+-- Name: idx_videos_document_with_weights; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_videos_document_with_weights ON public.videos USING gin (document_with_weights);
+
+
+--
 -- Name: idx_videos_published_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -161,6 +185,13 @@ CREATE UNIQUE INDEX page_tokens_next_page_token_idx ON public.page_tokens USING 
 --
 
 CREATE UNIQUE INDEX videos_youtube_id_idx ON public.videos USING btree (youtube_id);
+
+
+--
+-- Name: videos tsvupdate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tsvupdate BEFORE INSERT OR UPDATE ON public.videos FOR EACH ROW EXECUTE PROCEDURE public.videos_tsvector_trigger();
 
 
 --
