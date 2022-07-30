@@ -1,0 +1,7 @@
+# Editor(VS & goland)
+**/.history/**
+**/.idea/**
+**/.vscode/**
+
+vendor/
+.env
