@@ -51,7 +51,7 @@ func (youtubeRepo youtubeRepository) GetAvailableLastPageToken() (pageToken stri
 }
 
 func (youtubeRepo youtubeRepository) InsertNextPageToken(pageToken string) error {
-	_, err := youtubeRepo.pgxPool.Exec(context.Background(), "INSERT INTO page_tokens (next_page_token, created_at) VALUES ($1, $2)", pageToken, time.Now().UTC())
+	_, err := youtubeRepo.pgxPool.Exec(context.Background(), "INSERT INTO page_tokens (next_page_token, created_at) VALUES ($1, $2) ON CONFLICT DO NOTHING", pageToken, time.Now().UTC())
 	return err
 }
 

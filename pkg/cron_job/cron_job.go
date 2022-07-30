@@ -23,6 +23,6 @@ func Init(pgxPool *pgxpool.Pool) {
 			cron.NewParser(
 				cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)))
 	cronObj := NewCronJobObject(c, pgxPool)
-	cronObj.FetchYoutubeVideos()
+	cronObj.FetchYoutubeVideosAndAddToQueue()
 	c.Start()
 }

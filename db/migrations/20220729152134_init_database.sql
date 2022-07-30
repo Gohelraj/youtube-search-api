@@ -14,10 +14,12 @@ CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos (published_at);
 CREATE UNIQUE INDEX ON videos (youtube_id);
 
 CREATE TABLE IF NOT EXISTS page_tokens (
-    next_page_token VARCHAR(200) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    next_page_token VARCHAR(20) NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     is_used BOOLEAN NOT NULL DEFAULT FALSE
 );
+CREATE INDEX IF NOT EXISTS idx_page_tokens_next_page_token_is_used ON page_tokens (next_page_token, is_used);
 CREATE UNIQUE INDEX ON page_tokens (next_page_token);
 
 -- migrate:down

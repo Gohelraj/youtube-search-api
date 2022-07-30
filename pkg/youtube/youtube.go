@@ -31,7 +31,7 @@ func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpoo
 	if err != nil {
 		log.Fatalf("Error creating new YouTube client: %v", err)
 	}
-	publishedAfterTime := time.Now().AddDate(0, -1, 0).Format(time.RFC3339)
+	publishedAfterTime := time.Now().UTC().AddDate(0, -1 , 0).Format(time.RFC3339)
 	// Make the API call to YouTube.
 	call := service.Search.List([]string{"id,snippet"}).
 		Q(videoKeyword).
@@ -100,7 +100,7 @@ func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpoo
 }
 
 // ProcessYoutubeVideosFromQueue processes videos from queue and inserts them into database
-func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool)  {
+func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool) {
 	youtubeVideosQueue := ampq.NewQueue(config.Conf.Ampq.Url, config.Conf.Ampq.QueueName)
 	queueMessages, _ := youtubeVideosQueue.Consumer()
 	for queueMessage := range queueMessages {

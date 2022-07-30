@@ -18,10 +18,31 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.page_tokens (
-    next_page_token character varying(200) NOT NULL,
+    id integer NOT NULL,
+    next_page_token character varying(20) NOT NULL,
     created_at timestamp without time zone NOT NULL,
     is_used boolean DEFAULT false NOT NULL
 );
+
+
+--
+-- Name: page_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.page_tokens_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: page_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.page_tokens_id_seq OWNED BY public.page_tokens.id;
 
 
 --
@@ -70,10 +91,25 @@ ALTER SEQUENCE public.videos_id_seq OWNED BY public.videos.id;
 
 
 --
+-- Name: page_tokens id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_tokens ALTER COLUMN id SET DEFAULT nextval('public.page_tokens_id_seq'::regclass);
+
+
+--
 -- Name: videos id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.videos ALTER COLUMN id SET DEFAULT nextval('public.videos_id_seq'::regclass);
+
+
+--
+-- Name: page_tokens page_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_tokens
+    ADD CONSTRAINT page_tokens_pkey PRIMARY KEY (id);
 
 
 --
@@ -93,6 +129,13 @@ ALTER TABLE ONLY public.videos
 
 
 --
+-- Name: idx_page_tokens_next_page_token_is_used; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_page_tokens_next_page_token_is_used ON public.page_tokens USING btree (next_page_token, is_used);
+
+
+--
 -- Name: idx_videos_published_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -107,17 +150,17 @@ CREATE INDEX idx_videos_title_description_index ON public.videos USING btree (ti
 
 
 --
+-- Name: page_tokens_next_page_token_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX page_tokens_next_page_token_idx ON public.page_tokens USING btree (next_page_token);
+
+
+--
 -- Name: videos_youtube_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX videos_youtube_id_idx ON public.videos USING btree (youtube_id);
-
-
---
--- Name: videos_youtube_id_idx1; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX videos_youtube_id_idx1 ON public.videos USING btree (youtube_id);
 
 
 --
