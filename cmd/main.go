@@ -18,7 +18,10 @@ func main() {
 		log.Fatalf("error loading config: %v\n", err)
 	}
 
-	pgxPool := db.Connect(config.Conf.DatabaseURL)
+	pgxPool, err := db.Connect(config.Conf.DatabaseURL)
+	if err != nil {
+		log.Fatalf("error connecting to db: %v\n", err)
+	}
 	// closes db connection after the server is shut down
 	defer pgxPool.Close()
 
