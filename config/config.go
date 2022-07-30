@@ -14,7 +14,8 @@ type Config struct {
 	CronSpecsToFetchVideos string `mapstructure:"CRON_TO_FETCH_VIDEOS"`
 	VideoKeyword           string `mapstructure:"KEYWORD_TO_FETCH_VIDEOS"`
 	GoogleAPIKeys          []string
-	Ampq                   Amqp `mapstructure:",squash"`
+	ActiveGoogleAPIKey     string
+	Ampq                   Amqp   `mapstructure:",squash"`
 }
 
 type Amqp struct {
@@ -42,5 +43,6 @@ func LoadConfig() (err error) {
 	}
 	googleAPIKeys := viper.Get("GOOGLE_API_KEYS")
 	Conf.GoogleAPIKeys = strings.Split(googleAPIKeys.(string), ",")
+	Conf.ActiveGoogleAPIKey = Conf.GoogleAPIKeys[0]
 	return
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/Gohelraj/youtube-search-api/pkg/ampq"
 	"github.com/Gohelraj/youtube-search-api/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"log"
 	"net/http"
@@ -19,15 +20,14 @@ import (
 )
 
 // SearchVideosFromYoutube searches videos from YouTube and push the videos to queue
-func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpool.Pool) {
+func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 	youtubeRepository := repository.NewYoutubeRepo(pgxPool)
 	nextPageToken, err := youtubeRepository.GetAvailableLastPageToken()
 	if err != nil {
 		log.Printf("Error getting next page token: %v", err)
 		return
 	}
-
-	service, err := youtube.NewService(context.TODO(), option.WithAPIKey(apiKey))
+	service, err := youtube.NewService(context.Background(), option.WithAPIKey(config.Conf.ActiveGoogleAPIKey))
 	if err != nil {
 		log.Fatalf("Error creating new YouTube client: %v", err)
 	}
@@ -43,6 +43,12 @@ func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpoo
 
 	response, err := call.Do()
 	if err != nil {
+		if apiError, ok := err.(*googleapi.Error); ok {
+			// Forbidden error is returned when the API key is invalid.
+			if apiError.Code == http.StatusForbidden {
+				retryWithNewAPIKeyWhenForbidden(videoKeyword, pgxPool)
+			}
+		}
 		log.Printf("Error making YouTube API call: %v", err)
 		return
 	}
@@ -51,18 +57,8 @@ func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpoo
 		return
 	}
 
-	// Forbidden error is returned when the API key is invalid.
 	if response.HTTPStatusCode == http.StatusForbidden {
-		// Retry the request with new API key.
-		apiKeyIndex := utils.GetIndexOf(apiKey, config.Conf.GoogleAPIKeys)
-		if apiKeyIndex+1 < len(config.Conf.GoogleAPIKeys) {
-			apiKey = config.Conf.GoogleAPIKeys[apiKeyIndex+1]
-			log.Printf("Retrying with new API key")
-			SearchVideosFromYoutube(videoKeyword, apiKey, pgxPool)
-		} else {
-			log.Printf("No more API keys to retry with. Exiting.")
-			os.Exit(1)
-		}
+		retryWithNewAPIKeyWhenForbidden(videoKeyword, pgxPool)
 	}
 
 	var videos []model.VideoMetadata
@@ -123,5 +119,19 @@ func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool) {
 			log.Printf("Error inserting videos: %v", err)
 			continue
 		}
+	}
+}
+
+// retryWithNewAPIKeyWhenForbidden retries the request with new API key when forbidden error is returned
+func retryWithNewAPIKeyWhenForbidden(videoKeyword string, pgxPool *pgxpool.Pool) {
+	// Retry the request with new API key.
+	apiKeyIndex := utils.GetIndexOf(config.Conf.ActiveGoogleAPIKey, config.Conf.GoogleAPIKeys)
+	if apiKeyIndex+1 < len(config.Conf.GoogleAPIKeys) {
+		config.Conf.ActiveGoogleAPIKey = config.Conf.GoogleAPIKeys[apiKeyIndex+1]
+		log.Printf("Retrying with new API key")
+		SearchVideosFromYoutube(videoKeyword, pgxPool)
+	} else {
+		log.Printf("No more API keys to retry with. Exiting.")
+		os.Exit(1)
 	}
 }

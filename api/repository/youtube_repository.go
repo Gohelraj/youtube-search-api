@@ -45,7 +45,8 @@ func (youtubeRepo youtubeRepository) InsertVideos(videos []model.VideoMetadata) 
 }
 
 func (youtubeRepo youtubeRepository) GetAvailableLastPageToken() (pageToken string, err error) {
-	err = youtubeRepo.pgxPool.QueryRow(context.Background(), "SELECT next_page_token FROM page_tokens WHERE is_used = false ORDER BY created_at DESC LIMIT 1").Scan(&pageToken)
+	row := youtubeRepo.pgxPool.QueryRow(context.Background(), "SELECT next_page_token FROM page_tokens WHERE is_used = false ORDER BY created_at DESC LIMIT 1")
+	err = row.Scan(&pageToken)
 	if err != nil && err != pgx.ErrNoRows {
 		return "", err
 	}
