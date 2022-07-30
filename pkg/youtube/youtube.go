@@ -72,7 +72,7 @@ func SearchVideosFromYoutube(videoKeyword string, apiKey string, pgxPool *pgxpoo
 			log.Printf("Error parsing publishedAt: %v", err)
 		}
 		videos = append(videos, model.VideoMetadata{
-			ID:           item.Id.VideoId,
+			YoutubeID:    item.Id.VideoId,
 			Title:        item.Snippet.Title,
 			Description:  &item.Snippet.Description,
 			PublishedAt:  publishedAt,
