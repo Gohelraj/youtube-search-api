@@ -51,7 +51,9 @@ func LoadConfig() (err error) {
 		return
 	}
 	googleAPIKeys := viper.Get("GOOGLE_API_KEYS")
+	// convert the google api keys to a slice of strings
 	Conf.GoogleAPIKeys = strings.Split(googleAPIKeys.(string), ",")
+	// by default set first key as active api key
 	Conf.ActiveGoogleAPIKey = Conf.GoogleAPIKeys[0]
 	return
 }

@@ -32,7 +32,7 @@ func main() {
 		Handler: route.InitializeRouter(pgxPool),
 		// IdleTimeout is the maximum amount of time to wait for the
 		// next request when keep-alives are enabled.
-		IdleTimeout: 10 * time.Minute,
+		IdleTimeout: 2 * time.Minute,
 	}
 
 	// Start amqp consumer to process youtube videos from queue

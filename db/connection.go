@@ -9,6 +9,7 @@ import (
 	"runtime"
 )
 
+// connectionString returns the formatted database connection string
 func connectionString() string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		config.Conf.Database.Host, config.Conf.Database.Port, config.Conf.Database.User, config.Conf.Database.Password, config.Conf.Database.Name, config.Conf.Database.SSLMode)
@@ -30,6 +31,7 @@ func Connect() (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("pgx connection error: %w", err)
 	}
+	// verify that the connection works
 	if err := pool.Ping(context.Background()); err != nil {
 		log.Fatal(err)
 	}

@@ -1,6 +1,7 @@
 package ampq
 
 import (
+	"context"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"time"
@@ -14,12 +15,9 @@ type queue struct {
 	connection   *amqp.Connection
 	channel      *amqp.Channel
 	closed       bool
-
-	consumers []messageConsumer
 }
 
-type messageConsumer func(string)
-
+// NewQueue make connection and creates queue.
 func NewQueue(url string, qName string) *queue {
 	q := new(queue)
 	q.url = url
@@ -31,8 +29,10 @@ func NewQueue(url string, qName string) *queue {
 	return q
 }
 
+// Send sends message to queue.
 func (q *queue) Send(message []byte) {
-	err := q.channel.Publish(
+	err := q.channel.PublishWithContext(
+		context.Background(),
 		"",     // exchange
 		q.name, // routing key
 		false,  // mandatory
@@ -46,11 +46,13 @@ func (q *queue) Send(message []byte) {
 	}
 }
 
+// Consumer returns channel for consuming messages from queue.
 func (q *queue) Consumer() (<-chan amqp.Delivery, error) {
 	log.Println("Registering consumer...")
 	deliveries, err := q.registerQueueConsumer()
 	if err != nil {
 		log.Println("Consumer registration failed: ", err)
+		return deliveries, err
 	}
 	log.Println("Consumer registered!")
 	return deliveries, nil
@@ -63,10 +65,8 @@ func (q *queue) connect() {
 			q.connection = conn
 			q.errorChannel = make(chan *amqp.Error)
 			q.connection.NotifyClose(q.errorChannel)
-
 			q.openChannel()
 			q.declareQueue()
-
 			return
 		}
 
@@ -82,7 +82,6 @@ func (q *queue) reconnector() {
 		err := <-q.errorChannel
 		if !q.closed {
 			log.Println("Reconnecting after connection closed: ", err)
-
 			q.connect()
 		}
 	}

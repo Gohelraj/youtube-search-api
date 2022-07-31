@@ -17,6 +17,7 @@ func NewCronJobObject(c *cron.Cron, pgxPool *pgxpool.Pool) CronJob {
 	}
 }
 
+// Init initializes the cron job(s)
 func Init(pgxPool *pgxpool.Pool) {
 	c := cron.New(
 		cron.WithParser(

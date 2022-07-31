@@ -19,9 +19,9 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-// SearchVideosFromYoutube searches videos from YouTube and push the videos to queue
-func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
-	youtubeRepository := repository.NewYoutubeRepo(pgxPool)
+// SearchVideosFromYoutubeAndAddToQueue searches videos from YouTube and push the videos to queue
+func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.Pool) {
+	youtubeRepository := repository.NewVideoRepo(pgxPool)
 	nextPageToken, err := youtubeRepository.GetAvailableLastPageToken()
 	if err != nil {
 		log.Printf("Error getting next page token: %v", err)
@@ -32,8 +32,8 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		log.Fatalf("Error creating new YouTube client: %v", err)
 		return
 	}
-	publishedAfterTime := time.Now().UTC().AddDate(0, -1 , 0).Format(time.RFC3339)
-	// Make the API call to YouTube.
+	publishedAfterTime := time.Now().UTC().Add(-30 * time.Minute).Format(time.RFC3339)
+	// Prepare the API call.
 	call := service.Search.List([]string{"id,snippet"}).
 		Q(videoKeyword).
 		PageToken(nextPageToken).
@@ -42,6 +42,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		PublishedAfter(publishedAfterTime).
 		MaxResults(10)
 
+	// Make the API call to YouTube.
 	response, err := call.Do()
 	if err != nil {
 		if apiError, ok := err.(*googleapi.Error); ok {
@@ -67,7 +68,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		publishedAt, err := time.Parse(time.RFC3339, item.Snippet.PublishedAt)
 		if err != nil {
 			log.Printf("Error parsing publishedAt: %v", err)
-			return
+			continue
 		}
 		videos = append(videos, model.VideoMetadata{
 			YoutubeID:    item.Id.VideoId,
@@ -91,6 +92,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 	go youtubeRepository.MarkPageTokenAsUsed(nextPageToken)
 
 	if response.NextPageToken != "" {
+		// Store next page token to be used in next search.
 		err := youtubeRepository.InsertNextPageToken(response.NextPageToken)
 		if err != nil {
 			log.Printf("Error inserting next page token: %v", err)
@@ -102,7 +104,11 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 // ProcessYoutubeVideosFromQueue processes videos from queue and inserts them into database
 func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool) {
 	youtubeVideosQueue := ampq.NewQueue(config.Conf.Ampq.Url, config.Conf.Ampq.QueueName)
-	queueMessages, _ := youtubeVideosQueue.Consumer()
+	queueMessages, err := youtubeVideosQueue.Consumer()
+	if err != nil {
+		log.Printf("Error getting queue messages: %v", err)
+		return
+	}
 	for queueMessage := range queueMessages {
 		var videos []model.VideoMetadata
 		err := json.Unmarshal(queueMessage.Body, &videos)
@@ -110,7 +116,7 @@ func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool) {
 			log.Printf("Error unmarshalling videos: %v", err)
 			continue
 		}
-		youtubeRepository := repository.NewYoutubeRepo(pgxPool)
+		youtubeRepository := repository.NewVideoRepo(pgxPool)
 		err = youtubeRepository.InsertVideos(videos)
 		if err != nil {
 			// if error occurred while inserting videos data into database, then retry the request
@@ -118,6 +124,7 @@ func ProcessYoutubeVideosFromQueue(pgxPool *pgxpool.Pool) {
 			log.Printf("Error inserting videos: %v", err)
 			continue
 		}
+		// if no error occurred while inserting videos data into database, then ack the message
 		err = queueMessage.Ack(false)
 		if err != nil {
 			log.Printf("Error inserting videos: %v", err)
@@ -133,7 +140,7 @@ func retryWithNewAPIKeyWhenForbidden(videoKeyword string, pgxPool *pgxpool.Pool)
 	if apiKeyIndex+1 < len(config.Conf.GoogleAPIKeys) {
 		config.Conf.ActiveGoogleAPIKey = config.Conf.GoogleAPIKeys[apiKeyIndex+1]
 		log.Printf("Retrying with new API key")
-		SearchVideosFromYoutube(videoKeyword, pgxPool)
+		SearchVideosFromYoutubeAndAddToQueue(videoKeyword, pgxPool)
 	} else {
 		log.Printf("No more API keys to retry with. Exiting.")
 		os.Exit(1)

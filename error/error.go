@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// Custom errors
 var (
 	ErrInvalidValueInLimit  = generateError(http.StatusBadRequest, "invalid value in limit")
 	ErrInvalidValueInOffset = generateError(http.StatusBadRequest, "invalid value in offset")
@@ -28,6 +29,7 @@ func generateError(httpErrCode int, msg string) error {
 	}
 }
 
+// SendError write error to response with status code and message
 func SendError(c *gin.Context, err error) {
 	if customErr, ok := err.(*Error); ok {
 		c.JSON(customErr.HttpStatusCode, gin.H{"code": customErr.HttpStatusCode, "error": customErr.ErrMessage})

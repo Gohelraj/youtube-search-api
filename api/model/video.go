@@ -14,6 +14,7 @@ type VideoMetadata struct {
 	ThumbnailURL *string   `json:"thumbnailUrl,omitempty"`
 }
 
+// SearchVideosRequest search videos request
 type SearchVideosRequest struct {
 	SearchString string `json:"searchString"`
 }

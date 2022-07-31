@@ -6,10 +6,11 @@ import (
 	"log"
 )
 
+// FetchYoutubeVideosAndAddToQueue fetches youtube videos and adds to queue
 func (c CronJob) FetchYoutubeVideosAndAddToQueue() {
 	_, err := c.CronObj.AddFunc(config.Conf.CronSpecsToFetchVideos, func() {
 		log.Println("Fetching youtube videos")
-		youtube.SearchVideosFromYoutube(config.Conf.VideoKeyword, c.PgxPool)
+		youtube.SearchVideosFromYoutubeAndAddToQueue(config.Conf.VideoKeyword, c.PgxPool)
 	})
 	if err != nil {
 		log.Fatalf("error adding cron job: %v\n", err)

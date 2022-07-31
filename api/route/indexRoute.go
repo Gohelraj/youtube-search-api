@@ -11,20 +11,22 @@ import (
 
 // InitializeRouter initialize all API routes
 func InitializeRouter(pgxPool *pgxpool.Pool) *gin.Engine {
-	// default gin router with the Logger and Recovery middleware already attached.
-	r := gin.Default()
+	// Default gin router with the Logger and Recovery middleware already attached.
+	router := gin.Default()
 
-	r.GET("/health-check", func(c *gin.Context) {
+	// Health check endpoint for the API server to check if it is running
+	router.GET("/health-check", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Hello There!!")
 		return
 	})
 
-	youtubeRepository := repository.NewYoutubeRepo(pgxPool)
-	youtubeService := service.NewYoutubeService(youtubeRepository)
-	youtubeController := controller.NewYoutubeController(youtubeService)
+	videoRepository := repository.NewVideoRepo(pgxPool)
+	videoService := service.NewVideoService(videoRepository)
+	videoController := controller.NewVideoController(videoService)
 
-	r.GET("/videos", youtubeController.GetVideos)
-	r.POST("/videos/search", youtubeController.SearchVideos)
+	// Videos API routes
+	router.GET("/videos", videoController.GetVideos)
+	router.POST("/videos/search", videoController.SearchVideos)
 
-	return r
+	return router
 }
