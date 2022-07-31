@@ -1,0 +1,64 @@
+version: '3.6'
+services:
+  web:
+    build: .
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8087:8087"
+    environment:
+      - WAIT_HOSTS=db:5432,rabbitmq:5672
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+      - GIN_MODE=release
+    env_file:
+      - .env
+    links:
+      - db
+      - rabbitmq
+    volumes:
+      - .env:/usr/bin/.env
+    networks:
+      - my-network
+  db:
+    image: postgres:14.4-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PORT=${DB_PORT}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+    networks:
+      - my-network
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    volumes:
+      - ./rabbit-mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - "8090:15672"
+      - "5672:5672"
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+    networks:
+      - my-network
+volumes:
+  db:
+    driver: local
+networks:
+  my-network:
+    driver: bridge
