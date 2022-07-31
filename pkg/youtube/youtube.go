@@ -27,20 +27,27 @@ func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.
 		log.Printf("Error getting next page token: %v", err)
 		return
 	}
+	lastPublishedAt := time.Now().UTC().Add(-30 * time.Minute)
+	if nextPageToken == "" {
+		lastPublishedAt, err = youtubeRepository.GetLastPublishedAtDateTime()
+		if err != nil {
+			log.Printf("Error getting last published at date time: %v", err)
+			return
+		}
+	}
 	service, err := youtube.NewService(context.Background(), option.WithAPIKey(config.Conf.ActiveGoogleAPIKey))
 	if err != nil {
 		log.Fatalf("Error creating new YouTube client: %v", err)
 		return
 	}
-	publishedAfterTime := time.Now().UTC().Add(-30 * time.Minute).Format(time.RFC3339)
 	// Prepare the API call.
 	call := service.Search.List([]string{"id,snippet"}).
 		Q(videoKeyword).
 		PageToken(nextPageToken).
 		Order("date").
 		Type("video").
-		PublishedAfter(publishedAfterTime).
-		MaxResults(10)
+		PublishedAfter(lastPublishedAt.Format(time.RFC3339)).
+		MaxResults(50)
 
 	// Make the API call to YouTube.
 	response, err := call.Do()
@@ -79,14 +86,16 @@ func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.
 		})
 	}
 
-	youtubeVideosQueue := ampq.NewQueue(config.Conf.Ampq.Url, config.Conf.Ampq.QueueName)
-	videosData, err := json.Marshal(videos)
-	if err != nil {
-		log.Printf("Error marshalling videos: %v", err)
-		return
+	if len(videos) > 0 {
+		youtubeVideosQueue := ampq.NewQueue(config.Conf.Ampq.Url, config.Conf.Ampq.QueueName)
+		videosData, err := json.Marshal(videos)
+		if err != nil {
+			log.Printf("Error marshalling videos: %v", err)
+			return
+		}
+		youtubeVideosQueue.Send(videosData)
+		log.Println("Queued youtube videos")
 	}
-	youtubeVideosQueue.Send(videosData)
-	log.Println("Queued youtube videos")
 
 	// Mark last used page token as used to avoid using it again.
 	go youtubeRepository.MarkPageTokenAsUsed(nextPageToken)

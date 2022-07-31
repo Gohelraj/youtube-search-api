@@ -15,6 +15,7 @@ type VideoRepository interface {
 	MarkPageTokenAsUsed(pageToken string) error
 	GetVideos(limit int, offset int) ([]model.VideoMetadata, error)
 	SearchVideos(searchString string) ([]model.VideoMetadata, error)
+	GetLastPublishedAtDateTime() (time.Time, error)
 }
 
 type videoRepository struct {
@@ -104,4 +105,15 @@ func (videoRepo videoRepository) SearchVideos(searchString string) ([]model.Vide
 		videos = append(videos, video)
 	}
 	return videos, nil
+}
+
+// GetLastPublishedAtDateTime returns the latest published at date time from the database.
+func (videoRepo videoRepository) GetLastPublishedAtDateTime() (time.Time, error) {
+	row := videoRepo.pgxPool.QueryRow(context.Background(), "SELECT published_at FROM videos ORDER BY published_at DESC LIMIT 1")
+	var publishedAt time.Time
+	err := row.Scan(&publishedAt)
+	if err != nil && err != pgx.ErrNoRows {
+		return publishedAt, err
+	}
+	return publishedAt, nil
 }
