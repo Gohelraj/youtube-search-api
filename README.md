@@ -30,7 +30,7 @@ To make an API to fetch latest videos sorted in reverse chronological order of t
 
 ## How it works?
 
-- When a client request data using REST API, Serve will fetch for the latest videos based on the video published date and send back a paginated response.
+- When a client request data using REST API, Server will fetch for the latest videos based on the video published date and send back a paginated response.
 - In the backgroud, Cron job will run continuously at scheduled interval and fetch the latest videos from YouTube and send that videos to AMQP.
 - AMQP consumes the data and insert videos to Postgres Database.
 
