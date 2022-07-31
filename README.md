@@ -97,3 +97,5 @@ cp .env.example .env
 | Param | Type | Default | Description| Sample |
 | --- | --- | --- | --- | --- |
 | searchString | string, required |  | Search string to match in video's title and description  | {"searchString":"how to make tea"} |
+
+_The exact API usage can be inspected via the [`api.postman_collection.json`](./api.postman_collection.json) postman collection._
