@@ -3,14 +3,20 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/Gohelraj/youtube-search-api/config"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"runtime"
 )
 
+func connectionString() string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		config.Conf.Database.Host, config.Conf.Database.Port, config.Conf.Database.User, config.Conf.Database.Password, config.Conf.Database.Name, config.Conf.Database.SSLMode)
+}
+
 // Connect creates a connection to the database
-func Connect(dbURL string) (*pgxpool.Pool, error) {
-	conf, err := pgxpool.ParseConfig(dbURL)
+func Connect() (*pgxpool.Pool, error) {
+	conf, err := pgxpool.ParseConfig(connectionString())
 	if err != nil {
 		return nil, err
 	}

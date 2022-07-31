@@ -18,14 +18,14 @@ func main() {
 		log.Fatalf("error loading config: %v\n", err)
 	}
 
-	pgxPool, err := db.Connect(config.Conf.DatabaseURL)
+	pgxPool, err := db.Connect()
 	if err != nil {
 		log.Fatalf("error connecting to db: %v\n", err)
 	}
 	// closes db connection after the server is shut down
 	defer pgxPool.Close()
 
-	port := fmt.Sprintf(":%s", config.Conf.Port)
+	port := fmt.Sprintf(":%d", config.Conf.Port)
 	// Start the server
 	srv := &http.Server{
 		Addr:    port,

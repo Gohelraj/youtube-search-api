@@ -9,18 +9,27 @@ import (
 var Conf Config
 
 type Config struct {
-	Port                   string `mapstructure:"PORT"`
-	DatabaseURL            string `mapstructure:"DATABASE_URL"`
-	CronSpecsToFetchVideos string `mapstructure:"CRON_TO_FETCH_VIDEOS"`
-	VideoKeyword           string `mapstructure:"KEYWORD_TO_FETCH_VIDEOS"`
+	Port                   uint     `mapstructure:"PORT"`
+	Database               Database `mapstructure:",squash"`
+	CronSpecsToFetchVideos string   `mapstructure:"CRON_TO_FETCH_VIDEOS"`
+	VideoKeyword           string   `mapstructure:"KEYWORD_TO_FETCH_VIDEOS"`
 	GoogleAPIKeys          []string
 	ActiveGoogleAPIKey     string
-	Ampq                   Amqp   `mapstructure:",squash"`
+	Ampq                   Amqp `mapstructure:",squash"`
 }
 
 type Amqp struct {
 	Url       string `mapstructure:"AMQP_URL"`
 	QueueName string `mapstructure:"AMQP_QUEUE_NAME"`
+}
+
+type Database struct {
+	Host     string `mapstructure:"DB_HOST"`
+	Port     uint   `mapstructure:"DB_PORT"`
+	Name     string `mapstructure:"DB_NAME"`
+	User     string `mapstructure:"DB_USER"`
+	Password string `mapstructure:"DB_PASSWORD"`
+	SSLMode  string `mapstructure:"DB_SSL_MODE"`
 }
 
 // LoadConfig loads the config variables and returns a config struct
