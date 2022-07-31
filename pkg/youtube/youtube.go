@@ -13,7 +13,6 @@ import (
 	"google.golang.org/api/option"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"google.golang.org/api/youtube/v3"
@@ -153,7 +152,10 @@ func retryWithNewAPIKeyWhenForbidden(videoKeyword string, pgxPool *pgxpool.Pool)
 		log.Printf("Retrying with new API key")
 		SearchVideosFromYoutubeAndAddToQueue(videoKeyword, pgxPool)
 	} else {
-		log.Printf("No more API keys to retry with. Exiting.")
-		os.Exit(1)
+		log.Printf("Retrying with rotating API keys")
+		// If all API keys are used, then retry the request with first API key.
+		// This will ensure that the API key rotation will continue.
+		config.Conf.ActiveGoogleAPIKey = config.Conf.GoogleAPIKeys[0]
+		SearchVideosFromYoutubeAndAddToQueue(videoKeyword, pgxPool)
 	}
 }
