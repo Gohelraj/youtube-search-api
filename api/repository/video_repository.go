@@ -10,8 +10,8 @@ import (
 
 type VideoRepository interface {
 	InsertVideos(videos []model.VideoMetadata) error
-	InsertNextPageToken(pageToken string) error
-	GetAvailableLastPageToken() (pageToken string, err error)
+	InsertNextPageToken(pageToken string, publishedAfterDateTime time.Time) error
+	GetAvailableLastPageToken() (pageToken string, publishedAfterDateTime time.Time, err error)
 	MarkPageTokenAsUsed(pageToken string) error
 	GetVideos(limit int, offset int) ([]model.VideoMetadata, error)
 	SearchVideos(searchString string) ([]model.VideoMetadata, error)
@@ -48,18 +48,18 @@ func (videoRepo videoRepository) InsertVideos(videos []model.VideoMetadata) erro
 }
 
 // GetAvailableLastPageToken returns the next page token that is not used.
-func (videoRepo videoRepository) GetAvailableLastPageToken() (pageToken string, err error) {
-	row := videoRepo.pgxPool.QueryRow(context.Background(), "SELECT next_page_token FROM page_tokens WHERE is_used = false ORDER BY created_at DESC LIMIT 1")
-	err = row.Scan(&pageToken)
+func (videoRepo videoRepository) GetAvailableLastPageToken() (pageToken string, publishedAfterDateTime time.Time, err error) {
+	row := videoRepo.pgxPool.QueryRow(context.Background(), "SELECT next_page_token, published_after_time FROM page_tokens WHERE is_used = false ORDER BY created_at DESC LIMIT 1")
+	err = row.Scan(&pageToken, &publishedAfterDateTime)
 	if err != nil && err != pgx.ErrNoRows {
-		return "", err
+		return "", time.Time{}, err
 	}
-	return pageToken, nil
+	return pageToken, publishedAfterDateTime, nil
 }
 
 // InsertNextPageToken inserts the next page token into the database.
-func (videoRepo videoRepository) InsertNextPageToken(pageToken string) error {
-	_, err := videoRepo.pgxPool.Exec(context.Background(), "INSERT INTO page_tokens (next_page_token, created_at) VALUES ($1, $2) ON CONFLICT DO NOTHING", pageToken, time.Now().UTC())
+func (videoRepo videoRepository) InsertNextPageToken(pageToken string, publishedAfterDateTime time.Time) error {
+	_, err := videoRepo.pgxPool.Exec(context.Background(), "INSERT INTO page_tokens (next_page_token, published_after_time, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", pageToken, publishedAfterDateTime.Format(time.RFC3339), time.Now().UTC())
 	return err
 }
 

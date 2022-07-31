@@ -22,17 +22,19 @@ import (
 // SearchVideosFromYoutubeAndAddToQueue searches videos from YouTube and push the videos to queue
 func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.Pool) {
 	youtubeRepository := repository.NewVideoRepo(pgxPool)
-	nextPageToken, err := youtubeRepository.GetAvailableLastPageToken()
+	nextPageToken, publishedAfter, err := youtubeRepository.GetAvailableLastPageToken()
 	if err != nil {
 		log.Printf("Error getting next page token: %v", err)
 		return
 	}
-	lastPublishedAt := time.Now().UTC().Add(-30 * time.Minute)
 	if nextPageToken == "" {
-		lastPublishedAt, err = youtubeRepository.GetLastPublishedAtDateTime()
+		publishedAfter, err = youtubeRepository.GetLastPublishedAtDateTime()
 		if err != nil {
 			log.Printf("Error getting last published at date time: %v", err)
 			return
+		}
+		if publishedAfter.IsZero() {
+			publishedAfter = time.Now().UTC().Add(-2 * time.Hour)
 		}
 	}
 	service, err := youtube.NewService(context.Background(), option.WithAPIKey(config.Conf.ActiveGoogleAPIKey))
@@ -46,7 +48,7 @@ func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.
 		PageToken(nextPageToken).
 		Order("date").
 		Type("video").
-		PublishedAfter(lastPublishedAt.Format(time.RFC3339)).
+		PublishedAfter(publishedAfter.Format(time.RFC3339)).
 		MaxResults(50)
 
 	// Make the API call to YouTube.
@@ -102,7 +104,7 @@ func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.
 
 	if response.NextPageToken != "" {
 		// Store next page token to be used in next search.
-		err := youtubeRepository.InsertNextPageToken(response.NextPageToken)
+		err := youtubeRepository.InsertNextPageToken(response.NextPageToken, publishedAfter)
 		if err != nil {
 			log.Printf("Error inserting next page token: %v", err)
 			return

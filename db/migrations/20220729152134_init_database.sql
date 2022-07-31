@@ -18,6 +18,7 @@ CREATE UNIQUE INDEX ON videos (youtube_id);
 CREATE TABLE IF NOT EXISTS page_tokens (
     id SERIAL PRIMARY KEY,
     next_page_token VARCHAR(20) NOT NULL,
+    published_after_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     is_used BOOLEAN NOT NULL DEFAULT FALSE
 );

@@ -36,6 +36,7 @@ SET default_with_oids = false;
 CREATE TABLE public.page_tokens (
     id integer NOT NULL,
     next_page_token character varying(20) NOT NULL,
+    published_after_time timestamp without time zone NOT NULL,
     created_at timestamp without time zone NOT NULL,
     is_used boolean DEFAULT false NOT NULL
 );
