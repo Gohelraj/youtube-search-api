@@ -25,10 +25,14 @@ func NewYoutubeController(s service.YoutubeService) YoutubeController {
 }
 
 func (y youtubeController) GetVideos(c *gin.Context) {
-	limitQueryParam := c.DefaultQuery("limit", "10")
+	limitQueryParam := c.DefaultQuery("limit", "50")
 	limit, err := strconv.Atoi(limitQueryParam)
 	if err != nil {
 		er.SendError(c, er.ErrInvalidValueInLimit)
+		return
+	}
+	if limit > 100 {
+		er.SendError(c, er.ErrLimitExceeded)
 		return
 	}
 	offsetQueryParam := c.DefaultQuery("offset", "0")

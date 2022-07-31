@@ -9,6 +9,7 @@ var (
 	ErrInvalidValueInLimit  = generateError(http.StatusBadRequest, "invalid value in limit")
 	ErrInvalidValueInOffset = generateError(http.StatusBadRequest, "invalid value in offset")
 	ErrSearchStringRequired = generateError(http.StatusBadRequest, "searchString is required in request body")
+	ErrLimitExceeded        = generateError(http.StatusBadRequest, "limit must be less than 100")
 )
 
 type Error struct {
