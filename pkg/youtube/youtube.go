@@ -30,6 +30,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 	service, err := youtube.NewService(context.Background(), option.WithAPIKey(config.Conf.ActiveGoogleAPIKey))
 	if err != nil {
 		log.Fatalf("Error creating new YouTube client: %v", err)
+		return
 	}
 	publishedAfterTime := time.Now().UTC().AddDate(0, -1 , 0).Format(time.RFC3339)
 	// Make the API call to YouTube.
@@ -66,6 +67,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		publishedAt, err := time.Parse(time.RFC3339, item.Snippet.PublishedAt)
 		if err != nil {
 			log.Printf("Error parsing publishedAt: %v", err)
+			return
 		}
 		videos = append(videos, model.VideoMetadata{
 			YoutubeID:    item.Id.VideoId,
@@ -83,6 +85,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		return
 	}
 	youtubeVideosQueue.Send(videosData)
+	log.Println("Queued youtube videos")
 
 	// Mark last used page token as used to avoid using it again.
 	go youtubeRepository.MarkPageTokenAsUsed(nextPageToken)
@@ -91,6 +94,7 @@ func SearchVideosFromYoutube(videoKeyword string, pgxPool *pgxpool.Pool) {
 		err := youtubeRepository.InsertNextPageToken(response.NextPageToken)
 		if err != nil {
 			log.Printf("Error inserting next page token: %v", err)
+			return
 		}
 	}
 }

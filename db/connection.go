@@ -30,7 +30,7 @@ func Connect() (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("pgx connection error: %w", err)
 	}
-	if err := pool.Ping(context.TODO()); err != nil {
+	if err := pool.Ping(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 	return pool, nil
