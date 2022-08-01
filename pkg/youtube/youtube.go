@@ -54,7 +54,7 @@ func SearchVideosFromYoutubeAndAddToQueue(videoKeyword string, pgxPool *pgxpool.
 	response, err := call.Do()
 	if err != nil {
 		if apiError, ok := err.(*googleapi.Error); ok {
-			// Forbidden error is returned when the API key is invalid.
+			// Forbidden error is returned when the API key quota exhausted.
 			if apiError.Code == http.StatusForbidden {
 				retryWithNewAPIKeyWhenForbidden(videoKeyword, pgxPool)
 			}
