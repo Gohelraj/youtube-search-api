@@ -40,8 +40,8 @@ To make an API to fetch latest videos sorted in reverse chronological order of t
 
 1. Clone the repository using git clone:
 ```
-1) $ git clone https://github.com/Gohelraj/youtube-search-api
-2) $ cd youtube-search-api
+$ git clone https://github.com/Gohelraj/youtube-search-api
+$ cd youtube-search-api
 ```
 2. Copy the `.env.example` file to new `.env` file:
 ```
@@ -57,7 +57,11 @@ If permission error occurs, run command as root:
 $ sudo docker-compose up
 ```
 - The server will start listening on port `8087`
-- Incase you have problems running due to ports or stuff already in use, try running the script `docker_reset.sh`
+- Incase you have problems running due to ports or stuff already in use, try running the script below commands:
+```
+$ chmod +x ./docker_reset.sh 
+$ sudo ./docker_reset.sh`
+```
 Note: Be careful while using it as it will kill and remove all other containers as well and thus might lead to loss of your work.
 
 ### Using Source Code:
